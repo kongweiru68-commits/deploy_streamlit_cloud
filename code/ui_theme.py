@@ -227,7 +227,32 @@ CSS = """
                 border-bottom: 1px dashed #E2E8F0; color: #475569; }
   .status-row:last-child { border-bottom: none; }
   .dot-ok { color: #16A34A; font-weight: 700; }
+
+  /* ---------- 移动端 / 小屏自适应 ---------- */
+  .stTabs [data-baseweb="tab-list"] { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
+  .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar { display: none; }
+  .stTabs [data-baseweb="tab"] { flex-shrink: 0; white-space: nowrap; }
+
+  @media (max-width: 1100px) {
+    .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 768px) {
+    .block-container { padding: 2.6rem 0.75rem 1.4rem !important; }
+    .hero-hdr { padding: 12px 14px; border-radius: 12px; margin-bottom: 12px; }
+    .hero-hdr h2 { font-size: 1.06rem; line-height: 1.35; }
+    .page-head { gap: 10px; margin: 2px 0 10px; }
+    .page-head .ph-ico { width: 34px; height: 34px; font-size: 1.05rem; border-radius: 9px; }
+    .page-head .ph-t { font-size: 1.06rem; }
+    .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .kpi { padding: 12px 12px; border-radius: 12px; }
+    .kpi .k-v { font-size: 1.45rem; }
+    .kpi .k-i { font-size: 1.2rem; right: 10px; bottom: 8px; }
+    .feat-grid { grid-template-columns: 1fr; }
+    .flow .step { min-width: 100%; }
+    .stTabs [data-baseweb="tab"] { height: 34px; padding: 0 11px; font-size: .84rem; }
+  }
 </style>
+
 """
 
 

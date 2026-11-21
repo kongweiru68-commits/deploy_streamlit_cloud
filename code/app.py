@@ -249,31 +249,9 @@ def main() -> None:
     db.init_db()
     pc_user = st.session_state.get("pc_user")
     if pc_user is None:
-        left_p, right_p = st.columns([1.15, 1.0], gap="large")
-        with left_p:
-            st.markdown("""
-            <div class="portal-box">
-              <h3>设施甜菜水分胁迫智能监控中心</h3>
-              <div class="portal-sub">
-                集成温室 3D 数字孪生、RGB 冠层 Otsu 分割、热红外差分判级与 CUSUM 早期预警，
-                支持移动巡检端与桌面管理平台数据入库、专家复核及权限分级管控。
-              </div>
-              <div class="portal-stat">
-                <div class="k">监测设施与规模</div>
-                <div class="v">ADA2025 试验温室 · 33 株位 · 22 个跨床配对单元</div>
-              </div>
-              <div class="portal-stat">
-                <div class="k">核心算法引擎</div>
-                <div class="v">Otsu 冠层去背景 · 热红外因果差分 · 在线 CUSUM 预警</div>
-              </div>
-              <div class="portal-stat">
-                <div class="k">数据持久化服务</div>
-                <div class="v">本地 SQLite 关系数据库 · 支持 Navicat 实时管理</div>
-              </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-        with right_p:
+        _, mid_p, _ = st.columns([1.0, 1.25, 1.0])
+        with mid_p:
+            st.markdown('<div class="sec-hdr" style="margin-top:4px;">工作台登录</div>', unsafe_allow_html=True)
             auth_tab1, auth_tab2 = st.tabs(["账号登录", "新用户注册"])
             with auth_tab1:
                 u_in = st.text_input("登录账号", placeholder="请输入账号", key="login_u")

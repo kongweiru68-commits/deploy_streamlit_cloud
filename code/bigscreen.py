@@ -97,7 +97,17 @@ CSS = """
                 display: flex; justify-content: space-between; align-items: center; white-space: nowrap; }
   .bs-trust-i .tk { font-size: .76rem; color: #8DB8F0; }
   .bs-trust-i .tv { font-size: .88rem; font-weight: 700; color: #7DE8FF; }
+
+  @media (max-width: 1100px) {
+    .bs-krow { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (max-width: 768px) {
+    .bs-krow { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .bs-stat .v { font-size: 1.35rem; }
+    .bs-mc, .bs-trust { grid-template-columns: 1fr; }
+  }
 </style>
+
 """
 
 

@@ -239,11 +239,6 @@ def _enter_bigscreen() -> None:
 
 def main() -> None:
     ui_theme.inject()
-    st.markdown("""
-    <div class="hero-hdr">
-      <div><h2>设施甜菜水分胁迫数字孪生监测平台</h2></div>
-    </div>
-    """, unsafe_allow_html=True)
 
     db.init_db()
     stage = st.empty()
@@ -252,7 +247,6 @@ def main() -> None:
         with stage.container():
             _, mid_p, _ = st.columns([1.0, 1.25, 1.0])
             with mid_p:
-                st.markdown('<div class="sec-hdr" style="margin-top:4px;">工作台登录</div>', unsafe_allow_html=True)
                 auth_tab1, auth_tab2 = st.tabs(["账号登录", "新用户注册"])
                 with auth_tab1:
                     u_in = st.text_input("登录账号", placeholder="请输入账号", key="login_u")

@@ -27,13 +27,8 @@ DASH_DIR = PROJECT_ROOT / "mobile" / "dashboard"
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 import db  # noqa: E402
-import importlib  # noqa: E402
 import ui_theme  # noqa: E402
 import bigscreen  # noqa: E402
-
-importlib.reload(db)
-importlib.reload(bigscreen)
-importlib.reload(ui_theme)  # 热重载：避免 Streamlit 缓存旧版模块导致属性缺失
 from did_analysis import WINDOW_END, WINDOW_START, build_pairs  # noqa: E402
 from exp_v9_early_warning_and_hotspot import run_causal_cusum  # noqa: E402
 
@@ -251,46 +246,50 @@ def main() -> None:
     """, unsafe_allow_html=True)
 
     db.init_db()
+    stage = st.empty()
     pc_user = st.session_state.get("pc_user")
     if pc_user is None:
-        _, mid_p, _ = st.columns([1.0, 1.25, 1.0])
-        with mid_p:
-            st.markdown('<div class="sec-hdr" style="margin-top:4px;">工作台登录</div>', unsafe_allow_html=True)
-            auth_tab1, auth_tab2 = st.tabs(["账号登录", "新用户注册"])
-            with auth_tab1:
-                u_in = st.text_input("登录账号", placeholder="请输入账号", key="login_u")
-                p_in = st.text_input("登录密码", type="password", placeholder="请输入密码", key="login_p")
-                b1, b2 = st.columns(2)
-                if b1.button("登录工作台", type="primary", use_container_width=True):
-                    user, err = db.authenticate(u_in, p_in)
-                    if user is None:
-                        st.error(err)
-                    else:
-                        st.session_state["pc_user"] = user
+        with stage.container():
+            _, mid_p, _ = st.columns([1.0, 1.25, 1.0])
+            with mid_p:
+                st.markdown('<div class="sec-hdr" style="margin-top:4px;">工作台登录</div>', unsafe_allow_html=True)
+                auth_tab1, auth_tab2 = st.tabs(["账号登录", "新用户注册"])
+                with auth_tab1:
+                    u_in = st.text_input("登录账号", placeholder="请输入账号", key="login_u")
+                    p_in = st.text_input("登录密码", type="password", placeholder="请输入密码", key="login_p")
+                    b1, b2 = st.columns(2)
+                    if b1.button("登录工作台", type="primary", use_container_width=True):
+                        user, err = db.authenticate(u_in, p_in)
+                        if user is None:
+                            st.error(err)
+                        else:
+                            st.session_state["pc_user"] = user
+                            stage.empty()
+                            st.rerun()
+                    if b2.button("只读访客浏览", use_container_width=True):
+                        st.session_state["pc_user"] = {
+                            "id": "guest",
+                            "username": "guest",
+                            "name": "访客用户",
+                            "role": "guest",
+                            "role_label": "只读访客",
+                        }
+                        stage.empty()
                         st.rerun()
-                if b2.button("只读访客浏览", use_container_width=True):
-                    st.session_state["pc_user"] = {
-                        "id": "guest",
-                        "username": "guest",
-                        "name": "访客用户",
-                        "role": "guest",
-                        "role_label": "只读访客",
-                    }
-                    st.rerun()
-                with st.expander("初始账户说明", expanded=False):
-                    st.caption("系统内置管理员 `admin`（密码 `123456`）与普通巡检员 `inspector`（密码 `123456`），登录后可在后台修改密码或新增团队成员。")
+                    with st.expander("初始账户说明", expanded=False):
+                        st.caption("系统内置管理员 `admin`（密码 `123456`）与普通巡检员 `inspector`（密码 `123456`），登录后可在后台修改密码或新增团队成员。")
 
-            with auth_tab2:
-                ru = st.text_input("登录账号", placeholder="如：wang01", key="reg_u")
-                rn = st.text_input("姓名", placeholder="如：王农艺", key="reg_n")
-                rp = st.text_input("密码（至少 4 位）", type="password", key="reg_p")
-                rph = st.text_input("联系电话（可选）", placeholder="138****0000", key="reg_ph")
-                if st.button("完成注册", type="primary", use_container_width=True):
-                    ok, msg = db.register_user(ru, rn, rp, rph)
-                    if ok:
-                        st.success(msg)
-                    else:
-                        st.error(msg)
+                with auth_tab2:
+                    ru = st.text_input("登录账号", placeholder="如：wang01", key="reg_u")
+                    rn = st.text_input("姓名", placeholder="如：王农艺", key="reg_n")
+                    rp = st.text_input("密码（至少 4 位）", type="password", key="reg_p")
+                    rph = st.text_input("联系电话（可选）", placeholder="138****0000", key="reg_ph")
+                    if st.button("完成注册", type="primary", use_container_width=True):
+                        ok, msg = db.register_user(ru, rn, rp, rph)
+                        if ok:
+                            st.success(msg)
+                        else:
+                            st.error(msg)
         return
 
     df = load_v8_table()
@@ -321,10 +320,11 @@ def main() -> None:
     pairs = build_pairs(work_df, feature).sort_values(["plant", "dt"])
 
     if big_on:
-        bigscreen.render(
-            pairs, classify_residual, build_embedded_3d_html(),
-            (WINDOW_START, WINDOW_END), ui_theme.risk_list_html,
-        )
+        with stage.container():
+            bigscreen.render(
+                pairs, classify_residual, build_embedded_3d_html(),
+                (WINDOW_START, WINDOW_END), ui_theme.risk_list_html,
+            )
         return
 
     is_admin = pc_user.get("role") == "admin"
@@ -341,7 +341,9 @@ def main() -> None:
     if is_admin:
         tab_titles.append("⚙️ 后台与数据中心")
     _, bs_col = st.columns([1.0, 0.22])
-    bs_col.button("📺 进入大屏模式", key="top_enter_bs", on_click=_enter_bigscreen, use_container_width=True)
+    if bs_col.button("📺 进入大屏模式", key="top_enter_bs", on_click=_enter_bigscreen, use_container_width=True):
+        stage.empty()
+        st.rerun()
     tabs = st.tabs(tab_titles)
     tab0, tab_dp, tab1, tab2, tab3, tab4, tab5, tab6 = tabs[:8]
 

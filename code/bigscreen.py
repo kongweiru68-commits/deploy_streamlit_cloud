@@ -162,7 +162,6 @@ def _header_clock() -> None:
     )
 
 
-@st.fragment(run_every=10)
 def _top_kpis(n_units: int, n_warn: int, mean_l3: float) -> None:
     obs = db.list_observations()
     st.markdown(
@@ -192,7 +191,9 @@ def render(pairs: pd.DataFrame, classify, html_3d: str | None, window: tuple, ri
         _header_clock()
     with hc_exit:
         st.markdown('<div class="bs-exit-btn" style="padding-top:16px;">', unsafe_allow_html=True)
-        st.button("退出大屏", key="bs_exit_btn", use_container_width=True, on_click=_exit_bigscreen)
+        if st.button("退出大屏", key="bs_exit_btn", use_container_width=True, on_click=_exit_bigscreen):
+            _exit_bigscreen()
+            st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
     rows = []

@@ -38,7 +38,7 @@ CSS = """
     background: linear-gradient(180deg, #0F2A24 0%, #12362C 100%);
     border-right: 1px solid rgba(255,255,255,0.06);
   }
-  section[data-testid="stSidebar"] * { color: #CFE3D9; }
+  section[data-testid="stSidebar"] *, section[data-testid="stSidebar"] p { color: #CFE3D9 !important; }
   section[data-testid="stSidebar"] h1, section[data-testid="stSidebar"] h2,
   section[data-testid="stSidebar"] h3 { color: #FFFFFF; font-weight: 700; letter-spacing: .3px; }
   section[data-testid="stSidebar"] hr { border-color: rgba(255,255,255,0.10); }
@@ -99,26 +99,40 @@ CSS = """
   div[data-testid="stMetricLabel"] p { color: #64748B; font-size: .82rem; font-weight: 600; }
   div[data-testid="stMetricValue"] { color: #0F172A; font-weight: 800; }
 
-  /* ---------- 主分页：胶囊导航 ---------- */
+  /* ---------- 强制亮色对比度（防止手机深色模式白底白字） ---------- */
+  .stApp, .stApp p, .stApp label, .stApp label p,
+  .stMarkdown, .stMarkdown p, div[data-testid="stWidgetLabel"] p {
+    color: #0F172A !important;
+  }
+  .stApp div[data-baseweb="input"] > div,
+  .stApp div[data-baseweb="input"] input,
+  .stApp div[data-baseweb="select"] > div {
+    background-color: #FFFFFF !important; color: #0F172A !important; -webkit-text-fill-color: #0F172A !important;
+  }
+  .stApp input::placeholder { color: #94A3B8 !important; -webkit-text-fill-color: #94A3B8 !important; }
+
+  /* ---------- 主分页：极简白底 + 底部绿线（无绿色背景块） ---------- */
   .stTabs [data-baseweb="tab-list"] {
-    gap: 6px; background: #FFFFFF; padding: 6px; border-radius: 14px;
+    gap: 4px; background: #FFFFFF; padding: 4px 10px 0; border-radius: 12px;
     border: 1px solid #E2E8F0; box-shadow: 0 1px 3px rgba(15,23,42,.05);
   }
   .stTabs [data-baseweb="tab"] {
-    height: 40px; border-radius: 10px; padding: 0 16px; background: transparent;
-    color: #475569; font-weight: 600; border: none;
+    height: 40px; border-radius: 0; padding: 0 14px; background: transparent !important;
+    color: #64748B !important; font-weight: 600; border: none; border-bottom: 3px solid transparent;
   }
-  .stTabs [data-baseweb="tab"]:hover { background: #F1F5F3; color: #0F172A; }
+  .stTabs [data-baseweb="tab"]:hover { color: #0F172A !important; }
   .stTabs [aria-selected="true"] {
-    background: linear-gradient(135deg, #15803D, #22A053) !important; color: #FFFFFF !important;
-    box-shadow: 0 4px 10px rgba(21,128,61,.28);
+    background: transparent !important; color: #15803D !important; font-weight: 700;
+    border-bottom: 3px solid #15803D !important; box-shadow: none !important;
   }
   .stTabs [data-baseweb="tab-highlight"], .stTabs [data-baseweb="tab-border"] { display: none; }
 
   /* ---------- 按钮 ---------- */
   .stButton > button, .stDownloadButton > button {
     border-radius: 10px; font-weight: 600; border: 1px solid #CBD5E1; transition: all .18s ease;
+    background: #FFFFFF; color: #0F172A;
   }
+  .stButton > button p, .stDownloadButton > button p { color: inherit !important; }
   .stButton > button:hover, .stDownloadButton > button:hover { border-color: #15803D; color: #15803D; }
   .stButton > button[kind="primary"] {
     background: linear-gradient(135deg, #15803D, #22A053); border: none; color: #FFFFFF;

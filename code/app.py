@@ -238,6 +238,10 @@ def otsu_segment_thermal(arr: np.ndarray) -> tuple[np.ndarray, float, dict]:
     return low, thr, stats
 
 
+def _enter_bigscreen() -> None:
+    st.session_state["bigscreen_on"] = True
+
+
 def main() -> None:
     ui_theme.inject()
     st.markdown("""
@@ -336,6 +340,8 @@ def main() -> None:
     ]
     if is_admin:
         tab_titles.append("⚙️ 后台与数据中心")
+    _, bs_col = st.columns([1.0, 0.22])
+    bs_col.button("📺 进入大屏模式", key="top_enter_bs", on_click=_enter_bigscreen, use_container_width=True)
     tabs = st.tabs(tab_titles)
     tab0, tab_dp, tab1, tab2, tab3, tab4, tab5, tab6 = tabs[:8]
 

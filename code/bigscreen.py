@@ -129,12 +129,17 @@ def _header_clock() -> None:
         html,body{{margin:0;padding:0;background:transparent;font-family:"Inter","Microsoft YaHei",sans-serif;overflow:hidden;}}
         .bs-title{{position:relative;display:flex;justify-content:center;align-items:center;padding:8px 24px;
           background:linear-gradient(90deg,rgba(14,70,150,.55),rgba(10,40,95,.25),rgba(14,70,150,.55));
-          border:1px solid #1E4A87;border-radius:12px;box-sizing:border-box;height:62px;
+          border:1px solid #1E4A87;border-radius:12px;box-sizing:border-box;min-height:62px;
           box-shadow:0 0 22px rgba(34,211,238,.12) inset;}}
-        .t{{font-size:1.8rem;font-weight:800;letter-spacing:5px;color:#EAF6FF;white-space:nowrap;
+        .t{{font-size:clamp(1.05rem, 2.3vw, 1.8rem);font-weight:800;letter-spacing:4px;color:#EAF6FF;white-space:nowrap;
           text-shadow:0 0 14px rgba(34,211,238,.55);}}
-        .clk{{position:absolute;right:24px;color:#7DE8FF;font-size:1.08rem;font-weight:700;
+        .clk{{position:absolute;right:22px;color:#7DE8FF;font-size:1.05rem;font-weight:700;
           font-variant-numeric:tabular-nums;white-space:nowrap;}}
+        @media (max-width: 1120px){{
+          .bs-title{{flex-direction:column;gap:3px;padding:8px 10px;}}
+          .t{{letter-spacing:1.5px;font-size:clamp(0.95rem, 4.1vw, 1.4rem);}}
+          .clk{{position:static;font-size:0.9rem;}}
+        }}
         </style></head><body>
         <div class="bs-title">
           <div class="t">温室甜菜水分胁迫智能监测与预警平台</div>
@@ -152,7 +157,7 @@ def _header_clock() -> None:
           tick();
           setInterval(tick, 1000);
         </script></body></html>""",
-        height=70,
+        height=76,
         scrolling=False,
     )
 
@@ -182,7 +187,7 @@ def _exit_bigscreen() -> None:
 def render(pairs: pd.DataFrame, classify, html_3d: str | None, window: tuple, risk_html_fn) -> None:
     """渲染大屏。classify(val)->(lvl,name,icon,advice)；window=(WINDOW_START, WINDOW_END)。"""
     st.markdown(CSS, unsafe_allow_html=True)
-    hc_main, hc_exit = st.columns([1.0, 0.08], gap="small")
+    hc_main, hc_exit = st.columns([1.0, 0.13], gap="small")
     with hc_main:
         _header_clock()
     with hc_exit:

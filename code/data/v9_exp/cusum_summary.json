@@ -1,0 +1,16 @@
+{
+  "feature": "tm_canopy_p25",
+  "calib_window": "2025-08-12 ~ 2025-08-18",
+  "n_units": 22,
+  "detected_units": 22,
+  "detect_delay_median_hours": 73.0,
+  "detect_delay_min_hours": 1.0,
+  "detect_delay_max_hours": 172.0,
+  "pre_fpr_mean": 0.0211,
+  "in_alarm_rate_mean": 0.7093,
+  "clear_delay_median_hours": 98.42,
+  "post_end_zero_alarm_units": 22,
+  "placebo_n_pairs": 55,
+  "placebo_in_alarm_rate_median": 0.0,
+  "placebo_in_alarm_rate_max": 0.6207
+}

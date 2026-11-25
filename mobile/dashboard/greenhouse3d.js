@@ -2712,6 +2712,17 @@
       }
     }
 
-    return { highlight: highlight, setLayer: setLayer };
+    function setTimelineScale(scale, showWater) {
+      global._replayScale = Math.max(0.0, Math.min(1.35, Number(scale)));
+      ['W2', 'W3'].forEach(function (b) {
+        if (waterSheets[b]) {
+          waterSheets[b].mesh.visible = !!showWater;
+          waterSheets[b].mat.opacity = showWater ? 0.46 : 0.0;
+        }
+      });
+      updatePlantVisuals();
+    }
+
+    return { highlight: highlight, setLayer: setLayer, setTimelineScale: setTimelineScale };
   };
 })(window);

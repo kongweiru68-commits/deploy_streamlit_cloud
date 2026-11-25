@@ -140,6 +140,24 @@ def build_embedded_3d_html() -> str | None:
         return None
     rgbe_tag = f"<script>{rgbe_js.read_text(encoding='utf-8')}</script>" if rgbe_js.exists() else ""
 
+    # 读取 42 天真实恢复曲线用于 3D 时间轴动态回溯
+    tl_rows = []
+    rc_csv = DATA_DIR / "recovery_curve_v7.csv"
+    if rc_csv.exists():
+        try:
+            rc_df = pd.read_csv(rc_csv)
+            peak_val = max(float(rc_df["mean"].max()), 5.23)
+            for _, r in rc_df.iterrows():
+                tl_rows.append({
+                    "d": str(r["date"]).replace("_", "-")[5:],
+                    "p": str(r["phase"]),
+                    "m": round(float(r["mean"]), 2),
+                    "s": round(max(0.05, float(r["mean"]) / peak_val), 3),
+                })
+        except Exception:
+            tl_rows = []
+    tl_json = json.dumps(tl_rows, ensure_ascii=False)
+
     return f"""<!DOCTYPE html>
 <html lang="zh-CN"><head><meta charset="utf-8">
 <style>
@@ -161,6 +179,13 @@ def build_embedded_3d_html() -> str | None:
   .dotc{{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;}}
   .cb-wrap{{display:none;position:absolute;right:12px;bottom:10px;z-index:12;align-items:center;gap:8px;padding:5px 10px;border-radius:8px;background:rgba(4,16,26,.86);border:1px solid rgba(53,224,192,.35);font-size:10.5px;color:#d6f5ef;}}
   .cb-bar{{width:120px;height:8px;border-radius:4px;background:linear-gradient(90deg,#2563eb 0%,#06b6d4 28%,#eab308 58%,#f97316 80%,#ef4444 100%);}}
+  #tl-bar{{position:absolute;bottom:42px;left:50%;transform:translateX(-50%);z-index:16;display:flex;align-items:center;gap:8px;background:rgba(4,16,26,.88);border:1px solid rgba(53,224,192,.45);border-radius:10px;padding:5px 12px;color:#e6fffb;font-size:11.5px;backdrop-filter:blur(8px);max-width:92%;box-shadow:0 4px 16px rgba(0,0,0,.35);}}
+  #tl-play{{background:#35e0c0;color:#04101a;border:none;border-radius:6px;padding:3px 9px;font-weight:700;cursor:pointer;font-size:11px;white-space:nowrap;}}
+  #tl-slider{{width:170px;accent-color:#35e0c0;cursor:pointer;}}
+  .tl-tag{{padding:2px 7px;border-radius:99px;font-size:10.5px;font-weight:700;white-space:nowrap;}}
+  .tl-pre{{background:rgba(59,130,246,.28);color:#93c5fd;}}
+  .tl-in{{background:rgba(239,68,68,.3);color:#fca5a5;}}
+  .tl-post{{background:rgba(34,197,94,.28);color:#86efac;}}
 </style></head>
 <body>
 <div id="bar">
@@ -188,6 +213,13 @@ def build_embedded_3d_html() -> str | None:
     </div>
   </div>
 </div>
+<div id="tl-bar" style="display:none;">
+  <button id="tl-play" type="button">▶ 播放42天</button>
+  <input id="tl-slider" type="range" min="0" max="0" value="0" />
+  <span id="tl-date" style="font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;">--</span>
+  <span id="tl-phase" class="tl-tag tl-pre">断水前</span>
+  <span id="tl-val" style="color:#7ce8ff;font-weight:700;white-space:nowrap;">+0.00℃</span>
+</div>
 <div id="legend-bar">
   <span><i class="dotc" style="background:#3ddc84"></i>0 健康</span>
   <span><i class="dotc" style="background:#ffb020"></i>1 轻度</span>
@@ -202,11 +234,59 @@ def build_embedded_3d_html() -> str | None:
 {rgbe_tag}
 <script>{gh_js.read_text(encoding="utf-8")}</script>
 <script>
-  window.initGreenhouse3D({{
+  var gh3d = window.initGreenhouse3D({{
     data: window.DASH_DATA,
     LV: ['#3ddc84','#ffb020','#ff7a45','#ff4d67'],
     LVN: ['健康','早期轻度','中度','重度']
   }});
+  (function initTimeline() {{
+    var tl = {tl_json};
+    var bar = document.getElementById('tl-bar');
+    if (!tl || !tl.length || !bar || !gh3d || !gh3d.setTimelineScale) return;
+    bar.style.display = 'flex';
+    var sl = document.getElementById('tl-slider');
+    var btn = document.getElementById('tl-play');
+    var elD = document.getElementById('tl-date');
+    var elP = document.getElementById('tl-phase');
+    var elV = document.getElementById('tl-val');
+    sl.max = String(tl.length - 1);
+    // 默认停在断水末期峰值附近（展示当前胁迫态势）
+    var peakIdx = tl.length - 1;
+    var bestM = -999;
+    for (var i = 0; i < tl.length; i++) {{
+      if (tl[i].p === 'in' && tl[i].m > bestM) {{ bestM = tl[i].m; peakIdx = i; }}
+    }}
+    sl.value = String(peakIdx);
+    var phMap = {{ pre: ['断水前', 'tl-tag tl-pre'], in: ['断水期', 'tl-tag tl-in'], post: ['复水期', 'tl-tag tl-post'] }};
+    function applyIdx(idx) {{
+      var item = tl[idx] || tl[0];
+      elD.textContent = item.d;
+      var pm = phMap[item.p] || phMap.pre;
+      elP.textContent = pm[0];
+      elP.className = pm[1];
+      elV.textContent = (item.m >= 0 ? '+' : '') + item.m.toFixed(2) + '℃';
+      gh3d.setTimelineScale(item.s, item.p === 'post');
+    }}
+    applyIdx(peakIdx);
+    sl.addEventListener('input', function () {{ applyIdx(parseInt(sl.value, 10) || 0); }});
+    var timer = null;
+    btn.addEventListener('click', function () {{
+      if (timer) {{
+        clearInterval(timer); timer = null; btn.textContent = '▶ 播放42天'; return;
+      }}
+      btn.textContent = '⏸ 暂停';
+      var cur = parseInt(sl.value, 10) || 0;
+      if (cur >= tl.length - 1) cur = 0;
+      timer = setInterval(function () {{
+        cur++;
+        if (cur >= tl.length) {{
+          clearInterval(timer); timer = null; btn.textContent = '▶ 播放42天'; return;
+        }}
+        sl.value = String(cur);
+        applyIdx(cur);
+      }}, 360);
+    }});
+  }})();
 </script></body></html>"""
 
 
@@ -355,11 +435,12 @@ def main() -> None:
         n_warn = int((ov_df["lvl"] >= 2).sum()) if n_units else 0
         mean_l3 = float(ov_df["l3"].mean()) if n_units else 0.0
         db_obs = len(db.list_observations())
+        agro_tip = "建议优先对 W3 床执行潮汐补水" if mean_l3 >= 4.5 else ("建议关注 W2/W3 加密复核" if mean_l3 >= 2.5 else "当前整体水分状态平稳")
         ui_theme.kpi_cards([
-            {"label": "监测配对单元", "value": f"{n_units}", "sub": "W2/W3 缺水床 vs W1 对照床", "icon": "🌱", "tone": "g1"},
-            {"label": "中重度预警单元", "value": f"{n_warn}", "sub": f"窗末残差 ≥ 2.5℃ · 占比 {n_warn / max(n_units, 1) * 100:.0f}%", "icon": "🚨", "tone": "g2"},
-            {"label": "窗末平均升温", "value": f"{mean_l3:+.2f}℃", "sub": f"热红外指标 {feature}", "icon": "🌡️", "tone": "g3"},
-            {"label": "平台已入库巡检", "value": f"{db_obs}", "sub": "手机端同步 · SQLite 持久化", "icon": "📱", "tone": "g4"},
+            {"label": "监测配对单元", "value": f"{n_units} →", "sub": "W2/W3 缺水床 vs W1 对照床 · 同步配对", "icon": "🌱", "tone": "g1"},
+            {"label": "中重度预警单元", "value": f"{n_warn} ↗", "sub": f"残差 ≥ 2.5℃ 占比 {n_warn / max(n_units, 1) * 100:.0f}% · 重点盯防", "icon": "🚨", "tone": "g2"},
+            {"label": "窗末平均升温", "value": f"{mean_l3:+.2f}℃ ↗", "sub": agro_tip, "icon": "🌡️", "tone": "g3"},
+            {"label": "平台已入库巡检", "value": f"{db_obs}", "sub": "手机端离线同步 · SQLite 审计留痕", "icon": "📱", "tone": "g4"},
         ])
 
         r1c1, r1c2 = st.columns([1.0, 1.9], gap="medium")

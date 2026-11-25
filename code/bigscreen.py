@@ -52,8 +52,37 @@ CSS = """
   .bs-stat.warn { border-left-color: #F97316; } .bs-stat.warn .v { color: #FFB27A; }
 
   .bs-card {
+    position: relative;
     background: rgba(11,35,71,.82); border: 1px solid #1E4A87; border-radius: 12px;
     padding: 12px 16px; margin-bottom: 10px;
+    box-shadow: 0 0 18px rgba(34,211,238,.08) inset;
+  }
+  .bs-card::before, .bs-card::after {
+    content: ""; position: absolute; width: 12px; height: 12px; pointer-events: none;
+  }
+  .bs-card::before {
+    top: -1px; left: -1px; border-top: 2px solid #22D3EE; border-left: 2px solid #22D3EE; border-radius: 10px 0 0 0;
+  }
+  .bs-card::after {
+    bottom: -1px; right: -1px; border-bottom: 2px solid #22D3EE; border-right: 2px solid #22D3EE; border-radius: 0 0 10px 0;
+  }
+  .bs-alert-strip {
+    display: flex; align-items: center; gap: 10px; padding: 7px 14px; margin-bottom: 10px;
+    background: linear-gradient(90deg, rgba(153,27,27,.45), rgba(11,35,71,.78), rgba(153,27,27,.25));
+    border: 1px solid rgba(248,113,113,.55); border-radius: 9px; color: #FEE2E2; font-size: .86rem;
+    overflow: hidden; white-space: nowrap;
+  }
+  .bs-alert-badge {
+    background: #DC2626; color: #FFF; font-size: .74rem; font-weight: 800; padding: 2px 8px;
+    border-radius: 99px; flex-shrink: 0; letter-spacing: .5px;
+  }
+  .bs-alert-marquee { overflow: hidden; flex: 1; }
+  .bs-alert-track {
+    display: inline-block; padding-left: 2%; animation: bsScroll 22s linear infinite;
+  }
+  @keyframes bsScroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-45%); }
   }
   .bs-card .h { color: #EAF6FF; font-weight: 700; font-size: 1.02rem; margin-bottom: 8px; white-space: nowrap;
                 border-left: 4px solid #22D3EE; padding-left: 10px; display: flex; justify-content: space-between; align-items: center; }
@@ -207,8 +236,20 @@ def render(pairs: pd.DataFrame, classify, html_3d: str | None, window: tuple, ri
     n_warn = int((ov["lvl"] >= 2).sum()) if n_units else 0
     mean_l3 = float(ov["l3"].mean()) if n_units else 0.0
 
-    # ---- 顶部 1x6 指标横带 ----
+    # ---- 顶部 1x6 指标横带 + 动态高风险告警滚动条 ----
     _top_kpis(n_units, n_warn, mean_l3)
+    top3_alert = ov.sort_values("l3", ascending=False).head(3) if n_units else ov
+    alert_items = "  ｜  ".join(
+        f"🔴 {r['unit']} 窗末升温 {r['l3']:+.2f}℃（{r['name']}）" for _, r in top3_alert.iterrows()
+    )
+    if alert_items:
+        st.markdown(
+            f'<div class="bs-alert-strip"><span class="bs-alert-badge">实时预警</span>'
+            f'<div class="bs-alert-marquee"><span class="bs-alert-track">'
+            f'{alert_items}  ｜  建议优先开启 W3 潮汐补水 15 min，随后执行热红外复核  ｜  {alert_items}'
+            f'</span></div></div>',
+            unsafe_allow_html=True,
+        )
 
     # ---- 第一排：两列宽栏（3D 孪生 ｜ 四级判级 + 高风险 Top 6） ----
     r1_l, r1_r = st.columns([1.9, 1.0], gap="small")
@@ -322,18 +363,45 @@ def render(pairs: pd.DataFrame, classify, html_3d: str | None, window: tuple, ri
         )
 
     with b2:
+        w3_valve_on = st.session_state.get("bs_w3_valve_on", False)
+        fan_auto = st.session_state.get("bs_fan_auto", True)
+        valve_txt = '<span class="st-on">● 潮汐补水中（手动）</span>' if w3_valve_on else '<span class="st-wait">● 建议优先开启</span>'
+        fan_txt = '<span class="st-on">● 自动排风中</span>' if fan_auto else '<span class="st-warn">● 手动强排中</span>'
         st.markdown(
-            """
-            <div class="bs-card">
-              <div class="h">温室执行设备状态 <small>孪生联动</small></div>
-              <div class="bs-line"><span>负压风机阵列</span><span class="st-on">● 运行排风中</span></div>
+            f"""
+            <div class="bs-card" style="margin-bottom:6px;">
+              <div class="h">温室执行设备状态 <small>可控联动 · 防呆确认</small></div>
+              <div class="bs-line"><span>负压风机阵列</span>{fan_txt}</div>
               <div class="bs-line"><span>湿帘降温水泵</span><span class="st-on">● 协同降温中</span></div>
-              <div class="bs-line"><span>W3 补水电磁阀</span><span class="st-wait">● 建议优先开启</span></div>
+              <div class="bs-line"><span>W3 补水电磁阀</span>{valve_txt}</div>
               <div class="bs-line"><span>LED 顶部补光</span><span>○ 日间待命</span></div>
             </div>
             """,
             unsafe_allow_html=True,
         )
+        ctrl_c1, ctrl_c2 = st.columns(2, gap="small")
+        if ctrl_c1.button("关闭 W3 补水阀" if w3_valve_on else "开启 W3 补水阀", key="bs_btn_valve", use_container_width=True):
+            st.session_state["bs_pending_cmd"] = ("W3", "关闭补水电磁阀" if w3_valve_on else "开启潮汐补水电磁阀(15min)", "valve")
+        if ctrl_c2.button("切回自动排风" if not fan_auto else "风机手动强排", key="bs_btn_fan", use_container_width=True):
+            st.session_state["bs_pending_cmd"] = ("全棚", "风机切回自动模式" if not fan_auto else "负压风机手动强排", "fan")
+
+        pending = st.session_state.get("bs_pending_cmd")
+        if pending:
+            bed_p, act_p, kind_p = pending
+            st.warning(f"二次防呆确认：是否向【{bed_p}】下发「{act_p}」并写入数据库日志？")
+            cf1, cf2 = st.columns(2, gap="small")
+            if cf1.button("✅ 确认下发", key="bs_confirm_go", use_container_width=True):
+                if kind_p == "valve":
+                    st.session_state["bs_w3_valve_on"] = not w3_valve_on
+                else:
+                    st.session_state["bs_fan_auto"] = not fan_auto
+                u = st.session_state.get("pc_user") or {}
+                db.add_action(bed_p, act_p, "通过大屏二次防呆确认下发模拟指令", str(u.get("id", "pc")), str(u.get("name", "大屏值守")))
+                st.session_state.pop("bs_pending_cmd", None)
+                st.rerun()
+            if cf2.button("取消", key="bs_confirm_cancel", use_container_width=True):
+                st.session_state.pop("bs_pending_cmd", None)
+                st.rerun()
 
     with b3:
         recent = db.list_observations()[:3]

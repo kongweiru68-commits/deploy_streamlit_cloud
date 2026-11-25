@@ -385,6 +385,19 @@ def review_observation(obs_id: str, expert_level: int, expert_note: str, reviewe
     log_audit(reviewer_name, "REVIEW_OBS", f"复核观测 {obs_id} -> L{expert_level}")
 
 
+def add_action(bed: str, action_type: str, note: str, operator_id: str = "pc_admin", operator_name: str = "大屏值守") -> str:
+    """记录一条农事处置/设备联动动作并写入操作审计日志。"""
+    now = _now_iso()
+    act_id = f"act_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')[:18]}"
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT INTO actions (id, ts, bed, type, note, operator_id, operator_name) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (act_id, now, bed, action_type, note, operator_id, operator_name),
+        )
+    log_audit(operator_name, "EXEC_ACTION", f"[{bed}] {action_type}：{note}")
+    return act_id
+
+
 def list_actions(operator_name: str | None = None) -> list[dict[str, Any]]:
     sql = "SELECT * FROM actions "
     params: tuple[Any, ...] = ()

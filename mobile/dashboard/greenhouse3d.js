@@ -1038,7 +1038,8 @@
       envScene.add(bounceFloor);
       scene.environment = pmrem.fromScene(envScene, 0.035).texture;
 
-      if (typeof THREE.RGBELoader === 'function') {
+      var isSrcdoc = !window.location || window.location.protocol === 'about:' || window.location.href === 'about:srcdoc';
+      if (!isSrcdoc && typeof THREE.RGBELoader === 'function') {
         new THREE.RGBELoader().setDataType(THREE.UnsignedByteType).load('assets/sky_1k.hdr', function (hdrTex) {
           var envRT = pmrem.fromEquirectangular(hdrTex);
           scene.environment = envRT.texture;

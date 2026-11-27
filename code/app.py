@@ -36,7 +36,7 @@ plt.rcParams["font.sans-serif"] = ["Microsoft YaHei", "SimHei", "WenQuanYi Zen H
 plt.rcParams["axes.unicode_minus"] = False
 
 st.set_page_config(
-    page_title="设施甜菜水分胁迫监测平台",
+    page_title="设施甜菜缺水孪生预警系统",
     page_icon="🌱",
     layout="wide",
     initial_sidebar_state="expanded",

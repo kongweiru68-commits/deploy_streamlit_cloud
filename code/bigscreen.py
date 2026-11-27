@@ -171,7 +171,7 @@ def _header_clock() -> None:
         }}
         </style></head><body>
         <div class="bs-title">
-          <div class="t">温室甜菜水分胁迫智能监测与预警平台</div>
+          <div class="t">设施甜菜缺水孪生预警系统</div>
           <div class="clk" id="bs-clk">{now:%Y-%m-%d %H:%M:%S}</div>
         </div>
         <script>
